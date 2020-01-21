@@ -1,0 +1,213 @@
+shell脚本
+cat /etc/shells    查看本机可用解释器
+yum -y install ksh   安装新解释器
+
+bash优点: 历史记录,tab键,快捷键,管道,重定向
+--------------------------------------------------------------
+标准的shell脚本:
+1,声明解释器
+#!/bin/bash
+2,注释脚本功能,变量的含义等
+#
+3,脚本的执行代码
+---------------------------------------------------------------
+cd /opt
+vim test1.sh
+#!/bin/bash
+#这是一个测试脚本
+ls
+echo 123
+echo abc
+-------------------
+执行脚本的方式
+1,添加x权限
+chmod +x test1.sh    添加执行权限后使用绝对或者相对路径执行脚本
+2,使用bash(某个解释器)执行,开启了新子进程
+bash test1.sh
+3,使用source命令,或者. , 不开启新子进程,使用当前解释器执行脚本
+source test1.sh
+================================
+编写部署yum仓库的脚本
+#!/bin/bash
+url="http://172.25.254.254/content/rhel7.0/x86_64/dvd/"
+rm -rf /etc/yum.repos.d/*.repo
+echo "[abc]
+name=test
+baseurl=$url
+enabled=1
+gpgcheck=0" > /etc/yum.repos.d/abc.repo
+---------------------------------
+编写一键部署ftp服务的脚本
+#!/bin/bash
+yum -y install vsftpd  &> /dev/null
+systemctl restart vsftpd
+systemctl enable vsftpd
+---------------------
+可以临时关闭防火墙
+systemctl stop firewalld
+---------------------
+echo 123 > /var/ftp/abc    创建测试文件
+使用desktop执行wget ftp://172.25.0.11/abc   下载测试
+=========================
+常量  固定不变 脚本功能单一
+变量  灵活多变 脚本功能丰富,多使用变量使脚本更强
+--------------------------------
+变量
+1,自定义变量
+变量名称=变量的值
+名称可以使用英文大小写,数字,下划线,不能使用特殊符号,不能以数字开头
+a=10   定义变量a,值是10
+echo $a   查看变量a的值
+unset  a   取消变量a
+echo ${a}RMB   对容易混淆的名称划界限
+1a=10   错误的变量名定义
+-------------------
+2,环境变量,由系统定义好,直接调用,一般不需要修改
+USER用户名   HOSTNAME主机名   UID用户的id号   HOME用户的家目录 SHELL当前使用的解释器   PWD当前所在路径   PS1一级提示符   PS2二级提示符
+
+env  显示所有环境变量
+env | grep XXX
+set  显示所有变量
+set | grep XXX
+---------------------------------------
+3,位置变量和预定义变量
+#!/bin/bash
+echo $1  执行脚本后的第一个参数
+echo $2
+echo $3
+echo $0  执行脚本的名称
+echo $#  参数的个数
+echo $*  所有参数
+echo $$  进程号
+echo $?  
+--------------------------------------
+编写创建用户并配置密码的脚本
+初版:
+#!/bin/bash
+useradd abc
+echo 123 |passwd --stdin abc
+升级版:
+#!/bin/bash
+useradd $1
+echo $2 |passwd --stdin $1
+====================
+变量扩展:
+1,双引号 " "  ,界定字符串范围
+touch a b  创建2个文件
+touch "a b"  创建1个文件
+2,单引号 ' '   ,界定字符串范围,可以屏蔽特殊符号
+a=10   定义变量
+echo "$a"   调用,效果正常
+echo '$a'	调用,$符号效果被屏蔽
+3,反撇号 ` `  ,可以得到命令执行的结果
+a=date	  定义变量,值是date本身
+echo $a
+a=`date`  定义变量,值是date执行结果
+echo $a
+---------------------------------------
+使用read命令从键盘获取变量的值, -p是给出提示信息
+#!/bin/bash
+read -p "请输入用户名"  u
+useradd $u
+stty -echo
+read -p "请输密码"  p
+stty echo
+echo $p |passwd --stdin $u
+----------------
+stty -echo  屏蔽回显
+stty echo	恢复回显
+---------------------------------------
+发布全局变量使变量哪里都可以使用,通常自定义的变量是局部变量,无法在新开启的bash进程中使用
+a=10      定义变量
+echo $a	  查看变量
+bash	  新开启解释器
+echo $a	  无法查看到变量
+exit	  返回
+export a  将变量a发布为全局变量
+bash	  再次开启解释器	
+echo $a   变量可以使用
+-----------------------------------------
+shell中的运算
+1, 使用expr命令,运算符号两边需要加空格
+expr 1 + 1		加法
+expr 3 - 1		减法
+expr 2 \* 2		乘法,需要使用转移符号\屏蔽*的特殊含义
+expr 6 / 2		除法
+expr 5 % 2		求模(取余数)
+a=10
+expr $a + 1		同时支持变量
+expr $a + $a
+b=20
+expr $a + $b
+
+2, 
+echo $[1+1]
+echo $[3-1]
+echo $[3*2]
+echo $[4/2]
+echo $[7%5]
+echo $[a+1]		也支持变量
+echo $[a+a]
+echo $[b+a]
+echo $[b/a]
+
+3,
+let  运算结果不显示,通常针对变量使用,可以创建变量,可以修改变量的值
+a=10
+b=20
+let c=a+b  创建变量c,值是10+20
+echo $c  查看变量
+let c=20-a 修改现有变量c的值
+echo $c  再次查看
+------------------------
+变量的自增减,需要掌握主流写法
+let c=c+1   要写成   let c++
+let c=c-1   要写成   let c--
+let c=c+2   要写成   let c+=2
+let c=c-2   要写成   let c-=2
+let c=c*2   要写成   let c*=2
+
+4,bc 计算器,可以进行小数运算
+直接使用bc命令会进入交互式进程
+echo "1+1" | bc     非交互式使用bc
+echo "1.1+1" | bc
+echo "10/3" | bc
+echo "scale=3;10/3" | bc
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+ 
+

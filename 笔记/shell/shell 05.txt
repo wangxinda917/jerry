@@ -1,0 +1,157 @@
+回顾
+sed 选项  (定址符)指令   被处理的文件
+前置指令 |  sed 选项  (定址符)指令
+选项  -n  -r  -i
+指令  1p  2,5p  2,+5p  1~2p  2p;5p
+       /正则/d   
+	s///
+-------------------------
+a  行下添加
+i  行上添加
+c  替换整行
+
+sed 'i 888' abc	  所有行上添加888
+sed '1i 888' abc  第一行上添加
+sed '/a/i 888' abc   有a的行上添加
+sed 'a 888' abc      所有行下添加888
+sed '1a 888' abc     第一行下添加
+sed '2i 888' abc     效果同上
+sed 'c 888' abc      所有行替换为888
+sed '1c 888' abc	 把第一行替换
+---------------------------------
+找到使用bash的用户,并按照用户名-->密码
+的格式输出
+#!/bin/bash
+l=`sed -n '/bash$/p' /etc/passwd`  找到使用bash的用户的行
+for i in $l    将这些行交给for循环
+do
+	u=${i%%:*}	 第一次循环是第一个用户, 使用去尾提取用户名
+	p=`grep ^$u: /etc/shadow` 拿这个名字去找密码
+	pa=${p#*:}     掐头
+	pass=${pa%%:*}  去尾,得到密码
+	echo "$u --> $pass"
+done
+
+-------------------------------------
+grep 模糊搜索 
+vim	 互式对文本操作 
+sed  非交互式对文本操作 
+awk  精确搜索
+-------------------------------------
+使用方式:
+1, awk 选项   (条件)指令   被处理的文件
+2,  前置指令 | awk 选项   (条件)指令
+选项   -F 定义分隔符          指令   print 
+awk的内置变量  $1 $2 $3.... $0   NR行号   NF列号    "常量"
+-----------------------------
+awk '{print}' test    输出所有行
+awk '{print $1}' test   输出所有行的第1列
+awk '{print $2}' test   输出所有行的第1列
+awk '{print $1 $2}' test   输出所有行的第1列第2列
+awk '{print $1,$2}' test
+awk '{print $1,$2,$3}' test
+awk '{print $0}' test    输出所有列
+awk '{print $1,$0}' test   输出第一列后 再输出所有列
+-----------------------------
+awk -F/ '{print $3}' user     使用/做分隔符,输出第3列
+awk -F[:/] '{print $9}' user  使用:或/做分隔符,输出第9列
+
+awk -F: '{print $1"的解释器是"$7}' user  变量+常量组合输出
+awk -F: '{print $1"的UID是"$3}' user
+--------------------------------------
+df -h | awk '/vda1/{print "当前主机根分区可用空间是 "$4}'
+
+ifconfig eth0 |awk '/RX p/{print "当前主机eth0的接收流量是"$5"字节"}'
+ifconfig eth0 |awk '/TX p/{print "当前主机eth0的发送流量是"$5"字节"}'
+--------------------------
+如何输出  "  主机内存剩余空间是XXX "  
+free -h |awk '/^Mem/{print "主机内存剩余空间是"$4}'
+主机内存剩余空间是93M
+--------------------------
+/var/log/secure   安全日志路径
+awk '/Failed/{print $11}' /var/log/secure   在安全日志中查找访问本机密码输入失败的主机ip
+
+--------------------------
+awk处理的时机: 
+BEGIN{任务}  执行1次
+{任务}   逐行任务,执行N次
+END{任务}    执行1次
+--------------------------------------------------
+awk 'BEGIN{x=10;print x}' user  定义变量,然后输出变量,执行1次
+awk '{x=10;print x}' user   执行多次
+awk 'END{x=10;print x}' user   执行1次
+awk 'BEGIN{print NR}' user   显示行号,由于在逐行任务之前,显示0
+awk 'END{print NR}' user  显示行号,由于在逐行任务之后,显示最后一行的行号
+awk 'BEGIN{x=0}{x++}END{print x}' user  先定义变量,然后每一行将这个变量+1,最后输出变量的值
+------------------------------------------------
+\t 相当于tab  ,具有一定的排版功能  制表符
+awk -F: 'BEGIN{print "User\tUID\tHOME"}{print $1"\t"$3"\t"$6}END{print "总计"NR"行"}' user 
+
+--------------------------------------
+awk的条件
+1,使用正则:
+/ 正则/       ~  包含      !~ 不包含
+awk '/^root/{print}' user    基本正则匹配
+awk '/^root|^bin/{print}' user    扩展正则匹配
+awk -F: '$1~/root/{print}' user   找第1列包含root的行
+awk -F: '$1!~/root/{print}' user  找第1列不包含root的行
+awk -F: '$1!~/root/' user   任务仅仅是{print}时,可以省略不写
+awk -F: '$1~/root/{print $1}' user   针对具体列输出不能省略
+------------------------------
+2,使用数字或字符串
+ ==  !=   >   <    >=   <=
+awk 'NR==2{print}' user   输出第2行
+awk 'NR==2' user 		简写,效果同上
+awk 'NR<4' user    找1~3行
+awk 'NR<=3' user 	效果同上
+awk -F: '$1=="root"{print}' user   找第1列必须等于root的
+awk -F: '$1~/root/{print}' user   找第1列包含root的
+awk -F: '$1!="root"{print}' user  找第1列不等于root的
+awk -F: '$3==0{print}' user    找uid等于0的
+awk -F: '$3==0{print $1}' user   找uid等于0的,在输出第一列
+
+按 "用户名 --- 家目录 ---解释器" 输出服务器中所有的普通用户信息
+awk -F: '$3>=1000{print $1"---"$6"---"$7}' /etc/passwd
+-----------------------
+3,逻辑测试条件
+ &&  前后条件都匹配     || 前后条件匹配之一
+awk -F: '$3>=1000&&$3<2000' /etc/passwd  找uid是大于等于1000并且小于2000的
+awk -F: '$3<10||$3>1000' /etc/passwd  找uid是小于10或者大于1000的
+awk -F: '$3<10&&$3>1000' /etc/passwd   逻辑错误,什么都没有
+awk 'NR>=2&&NR<=4' user  找2~4行
+
+查找200 以内  含有7 或者7的倍数
+seq 200 | awk '$1~/7/||$1%7==0'
+-----------------------------------------------------------------
+找出使用bash的用户,按照  用户名 --> 密码 的格式输出
+思路:
+1,先找出使用bash的用户
+u=`awk -F: '/bash$/{print $1}'`
+2,拿着这些用户放在for循环中依次交给awk处理
+---------------------------------------------
+#!/bin/bash
+u=`awk -F: '/bash$/{print $1}' /etc/passwd`
+for i in $u
+do
+        grep ^$i: /etc/shadow | awk -F: '{print $1"-->"$2 }'
+done
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

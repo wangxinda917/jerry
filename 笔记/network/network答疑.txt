@@ -1,0 +1,68 @@
+
+###本地console接口登陆配置
+
+1,创建用户和密码
+
+[R1]aaa	
+[R1-aaa]local-user admin password cipher 123
+[R1-aaa]local-user admin service-type http terminal
+
+2,设置验证方式
+[R1]user-interface console 0	
+[R1-ui-console0]authentication-mode aaa
+
+###OSPF 协议 
+
+[R1]ospf 1	//启动OSPF进程
+[R1-ospf-1]area 0  //进入到骨干区域
+[R1-ospf-1-area-0.0.0.0]network 192.168.30.0 0.0.0.255 //宣告直连接口的网段信息
+
+[R1]dis ip routing-table 
+[R1]dis ip interface brief 
+
+###链路类型
+access  接入类型 ，一般应用在交换机与PC终端相连的接口上
+
+[sw3]interface  g0/0/2	
+[sw3-GigabitEthernet0/0/2]port link-type access 	
+[sw3-GigabitEthernet0/0/2]port default vlan 50
+
+trunk  干道类型  ，一般应用在交换机和交换机相连的接口上
+
+[sw3]int g0/0/4	
+[sw3-GigabitEthernet0/0/4]port link-type trunk 
+[sw3-GigabitEthernet0/0/4]port trunk allow-pass vlan all
+
+eth-trunk 聚合接口
+  
+[sw4]interface  Eth-Trunk 1	//创建逻辑接口
+[sw4-Eth-Trunk1]trunkport GigabitEthernet 0/0/1	  //将物理接口加入逻辑聚合口
+[sw4-Eth-Trunk1]trunkport g0/0/4
+	
+[sw4]dis eth-trunk //查看加入的物理成员接口	
+[sw4]display interface  Eth-Trunk  //查看聚合后的带宽
+[sw4]clear configuration interface g0/0/1  //恢复接口默认配置
+
+###配置ACL 访问控制列表
+
+[sw4]acl  number 2000	
+[sw4-acl-basic-2000]rule deny source 192.168.10.0 0.0.0.255	
+[sw4-acl-basic-2000]rule permit  source  any 	
+[sw4]interface  g0/0/3	
+[sw4-GigabitEthernet0/0/3]traffic-filter outbound acl 2000
+
+
+[sw4]dis acl all
+
+
+
+
+
+
+
+
+
+
+
+
+

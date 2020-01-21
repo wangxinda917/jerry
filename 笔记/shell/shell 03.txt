@@ -1,0 +1,302 @@
+回顾
+条件测试
+1,字符串   ==   !=     -z  ! -z
+2,数字   -eq  -ne  -gt  -ge  -lt  -le
+3,文件   -e  -f  -d  -r   -w   -x
+4,逻辑组合   &&     ||     ;
+
+if判断
+1,单分支
+if 条件测试 ;then
+	执行指令
+fi
+2,双分支
+if 条件测试 ;then
+	执行指令1
+else
+	执行指令2
+fi
+3,多分支
+if 条件测试1 ;then
+	执行指令1
+elif 条件测试2 ;then
+	执行指令2
+elif 条件测试3 ;then
+	执行指令3
+elif 条件测试4 ;then
+	执行指令4
+else
+	执行指令X
+fi
+-------------
+for循环
+for 变量名称 in 值1 值2 值3....  
+do
+	执行指令
+done
+
+ping -c 测试次数  -i 间隔时间  -W 测试失败后反馈时间
+
+while 条件测试   :
+do
+	执行指令
+done
+=============================
+case分支 ,功能类似if,不如if强大,比if精简
+case  变量  in
+模式1)
+    命令序列1 ;;
+模式2)
+    命令序列2 ;;
+    .. ..
+*)
+    默认命令序列
+esac
+--------------------------
+#!/bin/bash
+case $1 in
+t|T|tt|TTT)
+    touch $2 ;;
+m|M)
+    mkdir $2 ;;
+r)
+    rm -rf $2 ;;
+*)
+    echo "t|m|r"
+esac
+
+----------------------------------
+编写部署nginx的脚本
+准备工作:
+1, 回到真机的/linux-soft/02目录中
+2,将lnmp_soft.tar.gz传递到虚拟机中
+scp lnmp_soft.tar.gz server0:/
+3,去虚拟机根目录释放该文件
+tar -xf lnmp_soft.tar.gz
+4,将释放的目录中的nginx-1.10.3.tar.gz拷贝到/opt中
+编写脚本:
+#!/bin/bash
+yum -y install gcc openssl-devel pcre-devel
+tar -xf nginx-1.10.3.tar.gz
+cd nginx-1.10.3
+./configure
+make
+make install
+
+运行脚本后进入/usr/local/nginx/sbin目录,执行nginx程序
+然后临时关闭防火墙,在真机打开浏览器测试
+------------------------------------------
+netstat -ntulp | grep :80  查询80端口被什么服务占用
+-----------------
+使用case分支编写控制nginx的脚本:
+#!/bin/bash
+case $1 in
+on) 	
+	
+	/usr/local/nginx/sbin/nginx ;;
+off)
+	/usr/local/nginx/sbin/nginx -s stop ;;
+st)
+    netstat -ntulp | grep -q nginx
+    [ $? -eq 0 ] && echo "服务开启" || echo "服务未开启" ;;
+re)
+    /usr/local/nginx/sbin/nginx -s stop
+    /usr/local/nginx/sbin/nginx ;;
+*)
+	echo "on | off | st | re"
+esac
+---------------------------
+echo -e "\033[31mABCD\033[0m"
+-------------------------
+函数,将公共的语句块存储在一个函数名中,达到精简脚本,增加可读性的目的
+格式1：
+function  函数名 {
+    命令序列
+    .. ..
+}
+
+格式2：
+函数名() {
+    命令序列
+    .. ..
+}
+----------------------------------------
+#!/bin/bash
+cecho () {
+echo -e "\033[$1m$2\033[0m"
+}
+cecho 31 ABCDE
+cecho 32 ABCDE
+cecho 33 XYZDE
+cecho 34 ACCDE
+cecho 35 AAADE
+-----------------------------------------
+#!/bin/bash
+a() {
+a|a &
+}
+
+a
+--------------------------
+控制循环
+1,exit    终止循环的同时也终止了脚本
+2,break	  终止循环,继续执行循环后的任务
+3,continue  终止当前循环,进行下一次循环
+
+从键盘循环取整数（0结束）并求和，输出最终结果
+
+#!/bin/bash
+x=0
+while :
+do
+read -p "请输入数字(0是结束)"  n
+[ $n -eq 0 ] && break
+let x+=n
+done 
+echo "一共是$x"
+
+-----------------------------------------------------------------
+ 找出1~20以内6的倍数，并输出她的平方值
+
+#!/bin/bash
+for i in {1..20}
+do
+	x=$[i%6]
+	[ $x -eq 0 ]  ||  continue
+	echo $[i*i]
+done
+
+====================================
+字符串的处理
+
+1,截取的用法：
+    ${变量名:起始位置:长度}
+a=abcdef      定义变量
+echo ${a:1:2}    截取变量a的值,从第2位开始截取,一共截取2位
+echo ${a:4:2}
+echo ${a:1:4}
+
+----------------------------------------
+随机获取一个字符:
+#!/bin/bash
+a=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789
+x=$[RANDOM%62]
+echo ${a:x:1}
+----------------------------------------
+获取8位随机密码:
+#!/bin/bash
+a=abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789
+for i in {1..8}
+do
+        x=$[RANDOM%62]
+        p=${a:x:1}
+        pa=$pa$p
+done
+echo $pa
+---------------------------------------
+2 ,字串的替换
+${变量名称/old/new}
+a=abcd
+echo ${a/a/b}   替换1个a
+a=aabbcc
+echo ${a/a/b}	替换1个a
+echo ${a//a/b}	替换所有a
+a=aaabb
+echo ${a/a/b}
+echo ${a//a/b}
+echo ${a/aa/bb}  替换aa为bb
+echo ${a/aa/}    将aa替换为空,相当于删除
+-------------------------------------
+3,字串的删除
+${变量名称#删除的内容}      掐头
+ a=`head -1 /etc/passwd`    创建变量
+echo ${a#root}	 从左往右删除到第一个root
+echo ${a##*root}  从左往右删除到最后一个root
+
+${变量名称%删除的内容}    去尾
+echo ${a%bash}    从右往左删除到第一个bash
+echo ${a%root*}	  从右往左删除第一个root,以及root右边所有
+echo ${a%%:/*}    从右往左删除到最后一个:/
+
+-------------------------------------
+批量修改文件扩展名
+#!/bin/bash
+for i in `ls *.txt`
+do
+    x=${i%.*}
+	mv $i $x.doc
+done
+--------------------------
+#!/bin/bash
+for i in `ls *.$1`
+do
+    x=${i%.*}
+    mv $i $x.$2
+done
+--------------------------
+设置变量的初值(备用值)
+${变量名称:-初值}
+
+编写脚本,用户配置密码时如果没有定义则使用123456
+#!/bin/bash
+read -p "请输入用户名" n
+useradd $n
+read -p "请输入密码" p
+echo ${p:-123456}| passwd --stdin $n
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

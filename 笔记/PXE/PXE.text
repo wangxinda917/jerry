@@ -1,0 +1,4 @@
+应答文件(ks.cfg)需和PXE.sh脚本在同一目录下
+默认无图形界面 
+rootpw: 123456
+vistorpw: 123

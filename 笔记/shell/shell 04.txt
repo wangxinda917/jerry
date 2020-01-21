@@ -1,0 +1,167 @@
+回顾
+case分支
+case 变量名称 in
+模式1|XXX)
+	执行指令 ;;
+模式2)
+	执行指令 ;;
+模式3)
+	执行指令 ;;
+*)
+	执行指令
+esac
+------------------------------
+echo -e "\033[31mXXXX\033[0m"
+函数 
+格式1:
+function 函数名称 {
+	执行指令...
+}
+格式2:
+函数名称 () {
+	执行指令...
+}
+-------------------------------------
+exit
+break
+continue
+------------------------------------
+字串处理
+1, 截取  ${变量名称:}
+2, 替换  ${变量名称/}
+3, 删除  ${变量名称#}   ${变量名称%}
+变量的初值  ${变量名称:-}  
+=========================
+正则表达式, 配合某些工具,实现对文本的过滤,匹配,查找
+-------------------------
+基本正则
+grep ^root user    查找以root开头的行
+grep bash$ user    查找以bash结尾的行
+
+grep [rnt] user    查找有字母r或n或t的行
+grep [^rnt] user   查找除字母r或n或t的行
+grep r. user	   查找有r后面跟一个任意字符的行
+grep ro* user	   查找r后面有任意个o的行
+grep . user		   查找任意单个字符,包括空格
+grep .* user	   查找任意,包括空行
+
+grep "ro\{1,3\}" user   查找以r开头后面跟了1到3个o的行
+grep "ro\{2\}" user		查找以r开头后面跟了2个o的行
+grep "ro\{2,\}" user	查找以r开头后面跟了2个以及2个以上o的行
+grep "ro*" user  查找以r开头后面有没有o都行的行
+grep "\(0:\)\{2\}" user	 查找0:出现了连续2次的行
+
+扩展正则,需要使用grep -E或者 egrep
+egrep "root|bin" user    查找root或者bin的行
+egrep "ro{1,2}" user   效果等同 grep "ro\{1,2\} user"
+egrep "o{1,2}" user    效果等同 grep "o\{1,2\} user"
+egrep "(0:){2}" user   效果等同 grep "\(0:\)\{2\}" user
+
+egrep "^root|^bin" user    查找以root或者bin开头的行
+egrep "^(root|bin)" user   组合应用,效果同上
+
+grep "o\{1,\}" user    基本正则
+egrep "o{1,}" user	   扩展正则,效果同上
+egrep "o+" user		   扩展正则,效果同上,最简洁
+grep "o\{0,1\}" user   基本正则
+egrep "o{0,1}" user	   扩展正则,效果同上
+egrep "o?" user		   扩展正则,效果同上,最简洁
+
+^ $  []  [^]  .  *  \{n,m\}   \{n,\}   \{n\}  \(\)
++  ?   ( )   {n,m}  |  \b
+正则表达式练习: 
+ftp://172.40.50.115/pub
+
+-----------------------------------------------------------------
+echo 123 >> xx
+vim 
+sed 流式编辑器,能够实现对文本非交互式的增删改查,逐行处理
+使用方法:
+1,   前置命令 | sed 选项  (定址符)指令
+2, sed  选项  (定址符)指令  文档
+选项
+-n  屏蔽默认输出   -r 支持扩展正则   -i  写入文件
+指令
+p  输出文档内容     d 删除      s 替换
+-----------------------------------
+sed 'p' user	输出所有文档的内容,默认再多输出一遍
+sed -n  'p' user	输出所有文档的内容, 没有默认的输出
+sed -n  '1p' user   输出文档的第一行
+sed -n  '1,3p' user   输出1~3行
+sed -n  '2,5p' user   输出2~5行
+sed -n  '2p;5p' user  输出第2行和第5行
+sed -n  '2,+1p' user  输出第二行以及后面的1行
+sed -n  '3,+2p' user  输出第3行以及后面的2行
+sed -n  '1~2p' user   输出第1行之后每间隔一行再输出
+sed -n  '2~2p' user	  输出第2行之后每间隔一行再输出
+
+sed -n '/^root/p' user  使用正则输出root开头的行
+sed -n '/bash$/p' user  输出bash结尾的行
+sed -nr '/root|bin/p' user  输出有root或者bin的行
+sed -nr '/root|adm/p' user
+ 
+sed -n '=' user		查看行号
+sed -n '$=' user    查看最后一行行号
+sed -n '$=' /etc/passwd    
+sed -n '$p' user    查看最后一行
+sed '1d' user		删除第一行
+sed '1,3d' user	 	删除1~3行
+sed '3,+2d' user	删除第3行以及后面2行
+sed '1d;5d' user	删除第一行和第5行
+
+----------------------
+sed 's/old/new/'   替换
+sed 's/2017/XXXX/' test   替换所有行的第一个2017为XXXX
+sed 's/2017/XXXX/2' test  替换所有行的第2个
+sed 's/2017/XXXX/3' test  替换所有行的第3个
+sed '1s/2017/XXXX/' test  替换第1行的第一个2017
+sed '2s/2017/XXXX/2' test  替换第2行的第2个2017
+sed 's/2017/XXXX/g' test    替换所有行的所有2017
+
+
+通过sed修改 第一行的  /bin/bash 改成 /sbin/sh
+sed 's//bin/bash//sbin/sh/' user    报错
+sed 's/\/bin\/bash/\/sbin\/sh/' user   成功,但不好用
+sed 's#/bin/bash#/sbin/sh#' user   修改替换符号,最佳方案
+sed 's@/bin/bash@/sbin/sh@' user
+-------------------------------
+删除文本中每行的第2个字符与最后一个字符
+sed 's/.//2;s/.$//' nssw
+---------------------
+将第一个字符和最后一个字符替换
+sed -r 's/(a)(b)(c)/\1\2\3/' abc   保留之后按原顺序粘贴
+sed -r 's/(a)(b)(c)/\3\2\1/' abc	更换顺序
+sed -r 's/(.)(.)(.)/\3\2\1/' abc	使用正则符号增加匹配范围
+sed -r 's/^(.)(.*)(.)$/\3\2\1/' abc  最后版本
+sed -r 's/^(.)(.*)(.)$/\3\2\1/' nssw 
+
+删除所有行的所有数字
+sed 's/[0-9]//g' nssw 
+将所有行的所有大写字母添加括号
+sed -r 's/([A-Z])/{\1}/g' nssw 
+
+编写脚本,一键部署可以匿名上传的ftp服务
+#!/bin/bash
+yum -y install vsftpd
+sed -i 's/#anon_u/anon_u/'  /etc/vsftpd/vsftpd.conf
+systemctl restart vsftpd
+systemctl enable vsftpd
+chmod 777 /var/ftp/pub
+
+还要临时关闭防火墙和selinux
+使用真机拖拽文件到ftp的pub目录
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

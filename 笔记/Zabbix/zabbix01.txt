@@ -1,0 +1,180 @@
+ 配置
+部署监控服务器
+yum -y install gcc pere-devel openssl-devel
+yum -y install pcre-devel
+tar -xf nginx-1.12.2.tar.gz 
+     cd nginx-1.12.2/
+     ./configure --with-http_ssl_module
+     make && make install
+     yum -y install zlib-devel
+     yum -y install php php-mysql mariadb mariadb-server mariadb-devel
+     yum -y install php-fpm
+     vim /usr/local/nginx/conf/nginx.conf
+     systemctl restart mariadb.service 
+     systemctl restart php-fpm.service 
+     ss -nutlp |grep 9000
+     /usr/local/nginx/sbin/nginx 
+     ss -nutlp |grep 80
+     ss -nutlp |grep 3306
+     systemctl enable  php-fpm.service 
+     systemctl enable  mariadb.service 
+     echo "/usr/local/nginx/sbin/nginx" >> /etc/rc.local 全局开机自启
+     chmod +x /etc/rc.local
+	vim /usr/local/nginx/html/test.html
+	/usr/local/nginx/sbin/nginx -s reload
+	curl 192.168.2.5/test.html
+源码安装Zabbix Server
+yum -y install net-snmp-devel curl-devel
+yum -y install libevent-devel
+tar -xf zabbix-3.4.4.tar.gz
+cd zabbix-3.4.4/
+ ./configure  --enable-server  --enable-proxy --enable-agent --with-mysql=/usr/bin/mysql_config  --with-net-snmp --with-libcurl
+make && make install
+ls /usr/local/etc/配置文件
+ls /usr/local/bin普通命令
+ls /usr/local/sbin启动服务
+
+初始化zabbix
+mariadb
+create database zabbix character set utf8;
+grant all on zabbix.* to zabbix@"localhost" identified by 'zabbix';
+cd /zabbix-3.4.4/database/mysql/
+mysql -uzabbix -pzabbix zabbix < schema.sql
+mysql -uzabbix -pzabbix zabbix < images.sql
+mysql -uzabbix -pzabbix zabbix < data.sql
+导入有顺序
+
+上线Zabbix的Web页面
+cd Zabbix/zabbix-3.4.4/frontends/php/      
+网页文件
+cp -a * /usr/local/nginx/html/
+chmod -R 777 /usr/local/nginx/html/*
+
+修改Zabbix_server配置文件是其正常访问 修改参数
+vim /usr/local/nginx/conf/nginx.conf
+ http {
+        fastcgi_buffers 8 16k;
+        fastcgi_buffer_size 32k;
+        fastcgi_connect_timeout 300;
+        fastcgi_send_timeout 300;
+        fastcgi_read_timeout 300;
+/usr/local/nginx/sbin/nginx -s reload
+ss -nutlp |grep 80
+http://192.168.2.5/setup.php
+yum -y install php-gd支持图片 php-xml扩展标记语言 php-ldap支持共享软件
+yum -y install php-bcmath 正则匹配php-mbstring多字符级兼容
+[root@zabbixserver ~]# vim /etc/php.ini
+date.timezone = Asia/Shanghai                //设置时区
+max_execution_time = 300                    //最大执行时间，秒
+post_max_size = 32M                        //POST数据最大容量
+max_input_time = 300                        //服务器接收数据的时间限制
+memory_limit = 128M                        //内存容量限制
+[root@zabbixserver ~]# systemctl restart php-fpm
+http://192.168.2.5/setup.php 
+cat /usr/local/nginx/html/conf/zabbix.conf.php
+<?php
+// Zabbix GUI configuration file.
+global $DB;
+
+$DB['TYPE']     = 'MYSQL';
+$DB['SERVER']   = 'localhost';
+$DB['PORT']     = '0';
+$DB['DATABASE'] = 'zabbix';
+$DB['USER']     = 'zabbix';
+$DB['PASSWORD'] = 'zabbix';
+
+// Schema name. Used for IBM DB2 and PostgreSQL.
+$DB['SCHEMA'] = '';
+
+$ZBX_SERVER      = '192.168.2.5';
+$ZBX_SERVER_PORT = '10051';
+$ZBX_SERVER_NAME = '加藤磊亮';
+
+$IMAGE_FORMAT_DEFAULT = IMAGE_FORMAT_PNG;
+初始用户(admin)和密码(zabbix)
+vim /usr/local/etc/zabbix_server.conf
+DBHost=localhost
+//数据库主机，默认该行被注释
+DBName=zabbix
+//设置数据库名称
+DBUser=zabbix
+//设置数据库账户
+DBPassword=zabbix
+//设置数据库密码，默认该行被注释
+LogFile=/tmp/zabbix_server.log    
+//设置日志，仅查看以下即可
+root@zabbixserver ~]# zabbix_server                      //启动服务
+[root@zabbixserver ~]#useradd -s /sbin/nologin zabbix
+//不创建用户无法启动服务
+ss -ntulp |grep zabbix_server     //确认连接状态，端口10051
+如果是因为配置文件不对，导致服务无法启动时，不要重复执行zabbix_server，
+一定要先使用killall zabbix_server关闭服务后，再重新启动一次。
+
+web1 web2配置被监控主机
+yum -y install gcc pcre-devel
+tar -xf zabbix-3.4.4.tar.gz
+cd zabbix-3.4.4/
+./configure --enable-agent
+make && make install
+ls /usr/local/etc/
+ls /usr/local/bin
+ls /usr/local/sbin
+root@zabbixclient_web1 ~]# vim /usr/local/etc/zabbix_agentd.conf
+Server=127.0.0.1,192.168.2.5                //谁可以监控本机（被动监控模式）
+ServerActive=127.0.0.1,192.168.2.5            //谁可以监控本机（主动监控模式）
+Hostname=zabbixclient_web1                    //被监控端自己的主机名
+EnableRemoteCommands=1    
+//监控异常后，是否允许服务器远程过来执行命令，如重启某个服务
+UnsafeUserParameters=1                                 //是否允许自定义key监控
+root@zabbixclient_web1 ~]# zabbix_agentd                //启动agent服务
+
+
+添加监控主机
+主机是Zabbix监控的基础，Zabbix所有监控都是基于Host主机。
+使用火狐浏览器登录http://192.168.2.5，通过Configuration（配置）-->Hosts（主机）-->Create Host（创建主机）添加被监控Linux主机
+添加被监控主机时，需要根据提示输入被监控Linux主机的主机名称（最好与电脑的主机名一致，但也允许不一致）、主机组、IP地址等参数
+
+为被监控主机添加监控模板
+Zabbix通过监控模板来对监控对象实施具体的监控功能，根据模板来定义需要监控哪些数据，对于Linux服务器的监控，Zabbix已经内置了相关的模板（Template OS Linux），选择模板并链接到主机即可
+
+查看监控数据
+查看监控数据，登录Zabbix Web控制台，点击Monitoring(监控中)—> Latest data(最新数据)，正过滤器中填写过滤条件，根据监控组和监控主机选择需要查看哪些监控数据
+找到需要监控的数据后，可以点击后面的Graph查看监控图形
+
+
+自定义Zabbix监控项目
+步骤一：被监控主机创建自定义key
+自定义key语法格式为：UserParameter=自定义key名称,命令。
+自定义的key文件一般存储在/usr/local/etc/zabbix_agentd.conf.d/目录，这里还需要修改zabbix_agentd.conf文件，允许自定义监控key，来读取该目录下的所有文件 。
+[root@zabbixclient_web1 ~]# vim /usr/local/etc/zabbix_agentd.conf
+Include=/usr/local/etc/zabbix_agentd.conf.d/                //加载配置文件目录
+[root@zabbixclient_web1 ~]# cd /usr/local/etc/zabbix_agentd.conf.d/
+[root@zabbixclient_web1 zabbix_agentd.conf.d]# vim count.line.passwd
+UserParameter=count.line.passwd,wc -l /etc/passwd | awk ' {print $1} '
+////自定义key语法格式:
+//UserParameter=自定义key名称,命令
+
+测试自定义key是否正常工作
+[root@zabbixclient_web1 ~]# killall  zabbix_agentd
+[root@zabbixclient_web1 ~]# zabbix_agentd                                //重启agent服务
+[root@zabbixclient_web1 ~]# zabbix_get -s 127.0.0.1 -k count.line.passwd
+21
+注意：如zabbix_get命令执行错误，提示Check access restrictions in Zabbix agent configuration，则需要检查agent配置文件是否正确：
+
+创建监控模板
+1）添加监控模板
+登录Zabbix Web监控控制台，通过Configuration(配置)-->Template(模板)-->Create template(创建模板)，填写模板名称，新建模板群组
+创建模板后，默认模板中没有任何应用、项目、触发器、图形等
+2）创建应用
+创建完成模板后，默认模板中没有任何应用、项目、触发器、图形等资源。这里需要点击模板后面的Application（应用集）链接打开创建应用的页面
+点击Application（应用集）后，会刷新出图-16所示页面，在该页面中点击Create application（创建应用集）按钮
+3）创建监控项目item（监控项
+与创建应用一样，在模板中还需要创建监控项目，如图-18所示，并在刷新出的新页面中选择Create items（创建监控项）创建项目
+接下来，还需要给项目设置名称及对应的自定义key
+4）创建图形
+为了后期可以通过图形的方式展示监控数据，还需要在模板中创建图形，设置方法与前面的步骤一致，在监控模板后面点击Graph（图形）即可创建图形，设置监控图形基于什么监控数据
+5）将模板链接到被监控主机
+将完整的监控模板制作完成后，就可以将模板链接到主机实现监控功能了。首先找到被监控主机Configuration（配置）-->Hosts（主机）
+点击需要的被监控主机链接，打开监控主机设置页面，在Template（模板）页面中选择需要链接到该主机的模板，在此选择刚刚创建的模板count_line.passwd添加即可
+6）查看监控数据图形
+点击Monitoring（监控中）-->Craphs（图形），根据需要选择条件，查看监控图形

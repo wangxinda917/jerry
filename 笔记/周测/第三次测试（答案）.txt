@@ -1,0 +1,71 @@
+1.Linux系统中第三块SCSI硬盘如何表示？
+/dev/sdc3
+
+2.查看内核版本、主机名(两种方式)、IP/MAC地址(两种方式)
+a.	cat /etc/redhat-release
+b.	cat  /etc/hostname /  hostname 
+c.	ifconfig   /   cat /etc/sysconfig/network-scripts/ifcfg-eth*
+
+3.清理编辑的命令行
+快速清屏：Ctrl + l
+从当前光标处删除到行首：Ctrl + u
+从当前光标处往前删除一个单词：Ctrl + w
+
+4.通配符：[a-z]：多个字符或连续范围中的一个，若无则忽略
+
+5.使用tar命令制作归档备份，调用bzip2压缩工具压缩/etc/passwd，保留绝对路径
+tar  - jPcf    /etc/passwd.tar.bz2      /etc/passwd
+6.在cron任务中：，：分隔多个不连续的时间点   -：指定连续时间范围
+
+7.用户 natasha 能够对/etc/abc执行读和写操作
+setfacl  -m  u:natasha:rw  /etc/abc
+
+8.yum仓库不可用有哪些情况？（3种以上情况）
+1.文件.repo格式错误
+2.指定yum仓库地址错误
+3.enabled=0
+
+9.将分区/dev/vdb2格式化为EXT4文件系统
+mkfs.ext4  /dev/vdb2
+
+10.将/dev/vdb2开机自动挂载到/mnt/abc
+/dev/vdb2       /mnt/abc      ext4    defaults        0 0
+
+
+11.查看进程的主要命令工具有哪些？
+ps aux、ps –elf、 top 、 pstree 、pgrep
+
+
+12.killall [-9] 进程名...：杀死指定名称的所有进程   pkill：根据指定的名称或条件杀死进程 区别
+
+
+13.日志消息的优先级（共几级）谁最低、谁最高
+7级  最低7  最高1
+
+14.用centos-1804为虚拟机svr7快速建立前端盘
+qemu-img  create  -f  qcow2  -b  /data/images/centos7_muban.qcow2  /data/images/svr7.qcow2
+
+15.将记录的历史命令条数更改为 200 条
+vim  /etc/profile
+HISTSIZE = 200
+
+16.什么是软连接？什么是硬链接？
+软连接：指向原始文件的路径，若原始文件被删除，连接文件将失效；原始文件可以是目录；原始文件与连接文件可以在不同的分区/文件系统
+硬连接：原始文件被删除，连接文件仍然有效；原始文件不能是目录；原始文件与连接文件必须在同一个分区/文件系统
+
+
+17.在vim文本编辑器中：:w /root/newfile ，另存为其它文件 
+
+18.编译安装一般包括以下过程  
+解包  -> 配置 -> 编译 -> 安装 
+
+19.配置iSCSI磁盘流程
+/创建后端存储 ——> /创建iqn对象——> /将iqn对象与后端存储绑定 ——> /设置客户端的iqn ——> /开启本地监听的IP地址与端口
+
+20.允许用户Raikon从本机访问，具有查询权限，密码为atenorth
+ GRANT  select  ON  Contacts.*  TO  Raikon@localhost  IDENTIFIED BY  'atenorth';
+
+
+
+
+
